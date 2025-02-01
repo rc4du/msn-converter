@@ -1,0 +1,12 @@
+{{- $sender := "" -}}
+{{- range .Messages}}
+    {{- if not (eq $sender .From.User.FriendlyName)}}
+        {{- if (eq $sender "")}}
+            {{- printf "%s - %s\n" .Date .From.User.FriendlyName}}
+        {{- else}}
+            {{- printf "\n%s - %s\n" .Date .From.User.FriendlyName}}
+        {{- end}}
+        {{- $sender = .From.User.FriendlyName}}
+    {{- end}}
+    {{- printf "%s - %s\n" .Time .Text.Text}}
+{{- end}}
