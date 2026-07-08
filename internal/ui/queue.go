@@ -1,8 +1,10 @@
 package ui
 
 import (
+	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 )
 
 // Queue is an ordered, de-duplicated (by absolute path) list of input files.
@@ -58,4 +60,25 @@ func (q *Queue) Items() []string {
 // Len reports how many files are queued.
 func (q *Queue) Len() int {
 	return len(q.items)
+}
+
+// ListXML returns the absolute paths of the .xml files (case-insensitive
+// extension) directly inside dir. Subdirectories are not descended into.
+func ListXML(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() || !strings.EqualFold(filepath.Ext(e.Name()), ".xml") {
+			continue
+		}
+		abs, err := filepath.Abs(filepath.Join(dir, e.Name()))
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, abs)
+	}
+	return out, nil
 }

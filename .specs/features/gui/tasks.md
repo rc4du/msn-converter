@@ -185,9 +185,9 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Mixed temp dir (`a.xml`, `B.XML`, `c.txt`, subdir with `d.xml`) → returns only `a.xml`+`B.XML`
-- [ ] Empty dir / no-xml dir → empty slice, nil error
-- [ ] Gate: `go test ./internal/ui/` passes
+- [x] Mixed temp dir (`a.xml`, `B.XML`, `c.txt`, subdir with `d.xml`) → returns only `a.xml`+`B.XML`
+- [x] Empty dir / no-xml dir → empty slice, nil error
+- [x] Gate: `go test ./internal/ui/` passes
 
 **Tests**: unit (GUI-07 + case-insensitive + empty-folder edge cases)
 **Gate**: quick

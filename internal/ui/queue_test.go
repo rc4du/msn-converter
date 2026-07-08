@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -89,6 +91,68 @@ func TestQueueClear(t *testing.T) {
 	// Cleared paths can be re-added.
 	if got := q.Add(filepath.Join(dir, "a.xml")); got != 1 {
 		t.Errorf("Add after Clear = %d added; want 1", got)
+	}
+}
+
+// GUI-07: folder scan returns only .xml files directly inside the folder
+// (non-recursive), case-insensitive extension match, absolute paths.
+func TestListXMLMixedFolder(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"a.xml", "B.XML", "c.txt"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("x"), 0o644); err != nil {
+			t.Fatalf("seeding %s: %v", name, err)
+		}
+	}
+	sub := filepath.Join(dir, "subdir")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatalf("creating subdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sub, "d.xml"), []byte("x"), 0o644); err != nil {
+		t.Fatalf("seeding subdir/d.xml: %v", err)
+	}
+
+	got, err := ListXML(dir)
+	if err != nil {
+		t.Fatalf("ListXML returned error: %v", err)
+	}
+
+	want := []string{filepath.Join(dir, "B.XML"), filepath.Join(dir, "a.xml")}
+	slices.Sort(got)
+	slices.Sort(want)
+	if !slices.Equal(got, want) {
+		t.Errorf("ListXML = %v; want %v (only top-level xml, absolute paths)", got, want)
+	}
+	for _, p := range got {
+		if !filepath.IsAbs(p) {
+			t.Errorf("ListXML returned non-absolute path %q", p)
+		}
+	}
+}
+
+// GUI-07 edge case: empty folder → empty result, nil error.
+func TestListXMLEmptyFolder(t *testing.T) {
+	got, err := ListXML(t.TempDir())
+	if err != nil {
+		t.Fatalf("ListXML(empty dir) returned error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("ListXML(empty dir) = %v; want empty", got)
+	}
+}
+
+// GUI-07 edge case: folder with zero .xml files → empty result, nil error.
+func TestListXMLNoXMLFolder(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "c.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatalf("seeding c.txt: %v", err)
+	}
+
+	got, err := ListXML(dir)
+	if err != nil {
+		t.Fatalf("ListXML(no-xml dir) returned error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("ListXML(no-xml dir) = %v; want empty", got)
 	}
 }
 
