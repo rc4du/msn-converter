@@ -94,11 +94,11 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Valid `testdata/example.xml` → exact expected text (sender grouping, `{time} - {text}` lines, LF, verbatim text — assert a message containing `&`/`<` stays unescaped via inline fixture)
-- [ ] Malformed XML → error, no panic; 0-byte input → error, no panic
-- [ ] Zero-message log → `ErrNoMessages` (via `errors.Is`)
-- [ ] Binary contains template (no file read at runtime)
-- [ ] Gate: `go test ./internal/converter/` passes
+- [x] Valid `testdata/example.xml` → exact expected text (sender grouping, `{time} - {text}` lines, LF, verbatim text — assert a message containing `&`/`<` stays unescaped via inline fixture)
+- [x] Malformed XML → error, no panic; 0-byte input → error, no panic
+- [x] Zero-message log → `ErrNoMessages` (via `errors.Is`)
+- [x] Binary contains template (no file read at runtime)
+- [x] Gate: `go test ./internal/converter/` passes
 
 **Tests**: unit (GUI-01/02/03/05 1:1)
 **Gate**: quick
