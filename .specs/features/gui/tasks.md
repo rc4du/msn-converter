@@ -118,9 +118,9 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] `example.xml` → `16_9_2010_22-45-43_Ricardo.txt`
-- [ ] Receiver `[i]Gabriella[/i]` → `[i]Gabriella[-i]` in name; each illegal char class covered
-- [ ] Gate: `go test ./internal/converter/` passes
+- [x] `example.xml` → `16_9_2010_22-45-43_Ricardo.txt`
+- [x] Receiver `[i]Gabriella[/i]` → `[i]Gabriella[-i]` in name; each illegal char class covered
+- [x] Gate: `go test ./internal/converter/` passes
 
 **Tests**: unit (GUI-04 1:1 + illegal-char edge cases)
 **Gate**: quick

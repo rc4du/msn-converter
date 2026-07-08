@@ -61,6 +61,63 @@ func TestConvertVerbatimText(t *testing.T) {
 	}
 }
 
+// GUI-04: filename derived from the first message: {date /→_}_{time}_{receiver}.txt,
+// Windows-illegal chars → "-". Example fixture per spec.
+func TestConvertFileNameExample(t *testing.T) {
+	f, err := os.Open("../../testdata/example.xml")
+	if err != nil {
+		t.Fatalf("opening fixture: %v", err)
+	}
+	defer f.Close()
+
+	res, err := Convert(f)
+	if err != nil {
+		t.Fatalf("Convert returned error: %v", err)
+	}
+	if want := "16_9_2010_22-45-43_Ricardo.txt"; res.FileName != want {
+		t.Errorf("FileName = %q; want %q", res.FileName, want)
+	}
+}
+
+// GUI-04: every Windows-illegal char class (\ / : * ? " < > |) in the receiver
+// name is replaced by "-"; receiver with "/" ([i]Gabriella[/i]) included.
+func TestConvertFileNameSanitization(t *testing.T) {
+	cases := []struct {
+		name     string
+		receiver string // raw FriendlyName (XML-escaped when templated below)
+		want     string
+	}{
+		{"slash-receiver", "[i]Gabriella[/i]", "16_9_2010_22-45-43_[i]Gabriella[-i].txt"},
+		{"backslash", `a\b`, "16_9_2010_22-45-43_a-b.txt"},
+		{"slash", "a/b", "16_9_2010_22-45-43_a-b.txt"},
+		{"colon", "a:b", "16_9_2010_22-45-43_a-b.txt"},
+		{"asterisk", "a*b", "16_9_2010_22-45-43_a-b.txt"},
+		{"question", "a?b", "16_9_2010_22-45-43_a-b.txt"},
+		{"quote", `a&quot;b`, "16_9_2010_22-45-43_a-b.txt"},
+		{"less-than", "a&lt;b", "16_9_2010_22-45-43_a-b.txt"},
+		{"greater-than", "a&gt;b", "16_9_2010_22-45-43_a-b.txt"},
+		{"pipe", "a|b", "16_9_2010_22-45-43_a-b.txt"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			xmlIn := `<?xml version="1.0"?>
+<Log FirstSessionID="1" LastSessionID="1">
+<Message Date="16/9/2010" Time="22:45:43" DateTime="2010-09-17T01:45:43.093Z" SessionID="1">
+<From><User FriendlyName="Ana"/></From><To><User FriendlyName="` + tc.receiver + `"/></To>
+<Text Style="">oi</Text>
+</Message>
+</Log>`
+			res, err := Convert(strings.NewReader(xmlIn))
+			if err != nil {
+				t.Fatalf("Convert returned error: %v", err)
+			}
+			if res.FileName != tc.want {
+				t.Errorf("FileName = %q; want %q", res.FileName, tc.want)
+			}
+		})
+	}
+}
+
 // GUI-02: malformed XML → error, never panic.
 func TestConvertMalformedXML(t *testing.T) {
 	_, err := Convert(strings.NewReader("<Log><Message Date="))

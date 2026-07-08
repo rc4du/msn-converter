@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"text/template"
 )
 
@@ -36,5 +37,15 @@ func Convert(r io.Reader) (Result, error) {
 	if err := outputTmpl.Execute(&buf, log); err != nil {
 		return Result{}, fmt.Errorf("rendering template: %w", err)
 	}
-	return Result{Content: buf.Bytes()}, nil
+	return Result{FileName: outputFileName(log.Messages[0]), Content: buf.Bytes()}, nil
+}
+
+// outputFileName derives a Windows-safe name from the first message:
+// {date /→_}_{time}_{receiver}, then each remaining illegal char → "-", + ".txt".
+func outputFileName(m Message) string {
+	base := strings.ReplaceAll(m.Date, "/", "_") + "_" + m.Time + "_" + m.To.User.FriendlyName
+	for _, c := range `\/:*?"<>|` {
+		base = strings.ReplaceAll(base, string(c), "-")
+	}
+	return base + ".txt"
 }
