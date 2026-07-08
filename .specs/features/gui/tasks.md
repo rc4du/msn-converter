@@ -207,10 +207,10 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Mixed batch (valid, malformed, zero-message, nonexistent path) → `Converted` and `Failed` counts exact, reasons non-empty, batch completes
-- [ ] progress called exactly `len(files)` times with `(1..n, n)`
-- [ ] Two inputs mapping to same name → one output file, last write wins
-- [ ] Gate: `go test ./internal/ui/` passes
+- [x] Mixed batch (valid, malformed, zero-message, nonexistent path) → `Converted` and `Failed` counts exact, reasons non-empty, batch completes
+- [x] progress called exactly `len(files)` times with `(1..n, n)`
+- [x] Two inputs mapping to same name → one output file, last write wins
+- [x] Gate: `go test ./internal/ui/` passes
 
 **Tests**: unit (GUI-12/14 1:1 + mixed-batch edge case)
 **Gate**: quick
