@@ -3,6 +3,7 @@ package converter
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -140,6 +141,78 @@ func TestConvertZeroMessages(t *testing.T) {
 	_, err := Convert(strings.NewReader(xmlIn))
 	if !errors.Is(err, ErrNoMessages) {
 		t.Fatalf("Convert(zero messages) error = %v; want ErrNoMessages", err)
+	}
+}
+
+// GUI-14 (mechanics): ConvertFile writes the derived file into outDir with
+// content identical to Convert's output, and returns the written name.
+func TestConvertFileWritesOutput(t *testing.T) {
+	outDir := t.TempDir()
+
+	name, err := ConvertFile("../../testdata/example.xml", outDir)
+	if err != nil {
+		t.Fatalf("ConvertFile returned error: %v", err)
+	}
+	if want := "16_9_2010_22-45-43_Ricardo.txt"; name != want {
+		t.Errorf("returned name = %q; want %q", name, want)
+	}
+
+	got, err := os.ReadFile(filepath.Join(outDir, name))
+	if err != nil {
+		t.Fatalf("reading written file: %v", err)
+	}
+
+	f, err := os.Open("../../testdata/example.xml")
+	if err != nil {
+		t.Fatalf("opening fixture: %v", err)
+	}
+	defer f.Close()
+	res, err := Convert(f)
+	if err != nil {
+		t.Fatalf("Convert returned error: %v", err)
+	}
+	if string(got) != string(res.Content) {
+		t.Errorf("written content differs from Convert output\ngot:  %q\nwant: %q", got, res.Content)
+	}
+}
+
+// GUI-14: pre-existing file with the same name is overwritten (old content gone).
+func TestConvertFileOverwritesExisting(t *testing.T) {
+	outDir := t.TempDir()
+	target := filepath.Join(outDir, "16_9_2010_22-45-43_Ricardo.txt")
+	if err := os.WriteFile(target, []byte("OLD CONTENT MUCH LONGER THAN THE REAL OUTPUT SO TRUNCATION MATTERS "+strings.Repeat("x", 4096)), 0o644); err != nil {
+		t.Fatalf("seeding pre-existing file: %v", err)
+	}
+
+	if _, err := ConvertFile("../../testdata/example.xml", outDir); err != nil {
+		t.Fatalf("ConvertFile returned error: %v", err)
+	}
+
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("reading overwritten file: %v", err)
+	}
+	if strings.Contains(string(got), "OLD CONTENT") {
+		t.Errorf("old content still present after overwrite")
+	}
+	if !strings.HasPrefix(string(got), "16/9/2010 - [i]Gabriella[/i]\n") {
+		t.Errorf("overwritten file does not start with expected converted output; got %q", string(got)[:min(len(got), 60)])
+	}
+}
+
+// ConvertFile: unreadable input path → error, no panic.
+func TestConvertFileUnreadableInput(t *testing.T) {
+	_, err := ConvertFile(filepath.Join(t.TempDir(), "does-not-exist.xml"), t.TempDir())
+	if err == nil {
+		t.Fatal("ConvertFile(nonexistent input) = nil error; want error")
+	}
+}
+
+// ConvertFile: nonexistent output dir → error, no panic.
+func TestConvertFileBadOutputDir(t *testing.T) {
+	_, err := ConvertFile("../../testdata/example.xml", filepath.Join(t.TempDir(), "missing-subdir"))
+	if err == nil {
+		t.Fatal("ConvertFile(nonexistent outDir) = nil error; want error")
 	}
 }
 

@@ -140,10 +140,10 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Writes expected file into `t.TempDir()`; content matches `Convert` output
-- [ ] Pre-existing same-name file gets overwritten (old content gone)
-- [ ] Unreadable input path → error; nonexistent outDir → error (no partial panic)
-- [ ] Gate: `go test ./internal/converter/` passes
+- [x] Writes expected file into `t.TempDir()`; content matches `Convert` output
+- [x] Pre-existing same-name file gets overwritten (old content gone)
+- [x] Unreadable input path → error; nonexistent outDir → error (no partial panic)
+- [x] Gate: `go test ./internal/converter/` passes
 
 **Tests**: unit
 **Gate**: quick

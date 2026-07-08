@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -38,6 +40,26 @@ func Convert(r io.Reader) (Result, error) {
 		return Result{}, fmt.Errorf("rendering template: %w", err)
 	}
 	return Result{FileName: outputFileName(log.Messages[0]), Content: buf.Bytes()}, nil
+}
+
+// ConvertFile converts the XML log at xmlPath and writes the result into
+// outDir, overwriting any existing file with the same name. It returns the
+// written filename.
+func ConvertFile(xmlPath, outDir string) (string, error) {
+	f, err := os.Open(xmlPath)
+	if err != nil {
+		return "", fmt.Errorf("opening input: %w", err)
+	}
+	defer f.Close()
+
+	res, err := Convert(f)
+	if err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(filepath.Join(outDir, res.FileName), res.Content, 0o644); err != nil {
+		return "", fmt.Errorf("writing output: %w", err)
+	}
+	return res.FileName, nil
 }
 
 // outputFileName derives a Windows-safe name from the first message:
