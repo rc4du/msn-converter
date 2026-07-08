@@ -163,9 +163,9 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Add of duplicate (same abs path, incl. non-clean variants like `dir/../dir/a.xml`) → list unchanged, returns 0 added
-- [ ] Remove/Clear behave; Items returns defensive copy
-- [ ] Gate: `go test ./internal/ui/` passes
+- [x] Add of duplicate (same abs path, incl. non-clean variants like `dir/../dir/a.xml`) → list unchanged, returns 0 added
+- [x] Remove/Clear behave; Items returns defensive copy
+- [x] Gate: `go test ./internal/ui/` passes
 
 **Tests**: unit (GUI-08 1:1)
 **Gate**: quick
