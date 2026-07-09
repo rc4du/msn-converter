@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -8,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"fyne.io/fyne/v2/test"
 )
 
 // seedFailedFile writes raw bytes as a failed input file and returns its path.
@@ -297,5 +300,87 @@ func TestWriteErrorLogAllFailed(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("log missing %q:\n%s", want, got)
 		}
+	}
+}
+
+// LOG-06: when the log was written, the failure dialog text ends with the
+// spec-mandated discovery line carrying the full log path.
+func TestDialogTextFailureWithLog(t *testing.T) {
+	s := Summary{Converted: 1, Failed: []FileError{{Path: "/in/bad.xml", Reason: "boom"}}}
+	logPath := "/out/conversion-errors.log"
+
+	got := dialogText(s, logPath, nil)
+	wantSuffix := "\nDetails saved to /out/conversion-errors.log — send this file when reporting bugs."
+	if !strings.HasSuffix(got, wantSuffix) {
+		t.Errorf("dialogText = %q; want suffix %q", got, wantSuffix)
+	}
+	if !strings.HasPrefix(got, summaryText(s)) {
+		t.Errorf("dialogText lost the summary: %q", got)
+	}
+}
+
+// LOG-07: when writing the log failed, the failure dialog text ends with the
+// could-not-write line instead.
+func TestDialogTextFailureWriteError(t *testing.T) {
+	s := Summary{Failed: []FileError{{Path: "/in/bad.xml", Reason: "boom"}}}
+
+	got := dialogText(s, "", errors.New("disk full"))
+	wantSuffix := "\nCould not write log: disk full"
+	if !strings.HasSuffix(got, wantSuffix) {
+		t.Errorf("dialogText = %q; want suffix %q", got, wantSuffix)
+	}
+	if strings.Contains(got, "Details saved") {
+		t.Errorf("dialogText mentions saved log despite write error: %q", got)
+	}
+}
+
+// LOG-08: a batch with 0 failures produces a dialog text with no log mention.
+func TestDialogTextSuccessNoLogMention(t *testing.T) {
+	got := dialogText(Summary{Converted: 3}, "", nil)
+	if got != "3 converted, 0 failed" {
+		t.Errorf("dialogText = %q; want %q", got, "3 converted, 0 failed")
+	}
+}
+
+// LOG-01/06 wiring + LOG-09 wiring: a tapped failing batch leaves the log in
+// the output folder and the app keeps running; a following all-valid batch
+// removes it.
+func TestConvertTapWritesAndCleansErrorLog(t *testing.T) {
+	u := newTestUI(t)
+	inDir := t.TempDir()
+	outDir := t.TempDir()
+
+	valid := writeXML(t, inDir, "valid.xml", "16/9/2010", "22:45:43", "Ricardo", "oi")
+	malformed := filepath.Join(inDir, "malformed.xml")
+	if err := os.WriteFile(malformed, []byte("<Log><Message Date="), 0o644); err != nil {
+		t.Fatalf("seeding malformed.xml: %v", err)
+	}
+
+	done := make(chan Summary, 1)
+	u.batchDone = func(s Summary) { done <- s }
+
+	// Failing batch → log written with the failed file's forensics.
+	u.addFiles([]string{valid, malformed})
+	u.setOutputDir(outDir)
+	test.Tap(u.convertBtn)
+	<-done
+
+	logPath := filepath.Join(outDir, "conversion-errors.log")
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("log missing after failing batch: %v", err)
+	}
+	if !strings.Contains(string(data), malformed) {
+		t.Errorf("log lacks failed file path:\n%s", data)
+	}
+
+	// All-valid batch into the same folder → stale log removed.
+	u.queue.Clear()
+	u.addFiles([]string{valid})
+	test.Tap(u.convertBtn)
+	<-done
+
+	if _, err := os.Stat(logPath); !os.IsNotExist(err) {
+		t.Errorf("stale log still present after clean batch; stat err = %v", err)
 	}
 }

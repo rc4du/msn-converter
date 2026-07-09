@@ -215,22 +215,24 @@ func (u *appUI) beginBatch() (files []string, outDir string) {
 }
 
 // runBatchAsync runs on a background goroutine; every UI mutation goes
-// through fyne.Do.
+// through fyne.Do. The error log is written (or a stale one removed) here,
+// off the UI thread, before the summary dialog.
 func (u *appUI) runBatchAsync(files []string, outDir string) {
 	s := RunBatch(files, outDir, func(done, total int) {
 		fyne.Do(func() {
 			u.progress.SetValue(float64(done) / float64(total))
 		})
 	})
-	fyne.Do(func() { u.finishBatch(s) })
+	logPath, logErr := handleErrorLog(outDir, s)
+	fyne.Do(func() { u.finishBatch(s, logPath, logErr) })
 }
 
 // finishBatch clears the running state, re-gates Convert and shows the
 // summary. The queue is left untouched (spec: list kept as-is).
-func (u *appUI) finishBatch(s Summary) {
+func (u *appUI) finishBatch(s Summary, logPath string, logErr error) {
 	u.running = false
 	u.updateConvertState()
-	u.showSummary(s)
+	u.showSummary(s, logPath, logErr)
 	if u.batchDone != nil {
 		u.batchDone(s)
 	}
@@ -247,14 +249,29 @@ func summaryText(s Summary) string {
 	return b.String()
 }
 
+// dialogText renders the completion dialog body. Failures append the error
+// log discovery line (LOG-06) or the write-failure note (LOG-07); a clean
+// batch never mentions the log (LOG-08).
+func dialogText(s Summary, logPath string, logErr error) string {
+	text := summaryText(s)
+	if len(s.Failed) == 0 {
+		return text
+	}
+	if logErr != nil {
+		return text + "\nCould not write log: " + logErr.Error()
+	}
+	return text + "\nDetails saved to " + logPath + " — send this file when reporting bugs."
+}
+
 // showSummary pops the completion dialog: plain information when everything
 // converted, a scrollable failure report otherwise.
-func (u *appUI) showSummary(s Summary) {
+func (u *appUI) showSummary(s Summary, logPath string, logErr error) {
+	text := dialogText(s, logPath, logErr)
 	if len(s.Failed) == 0 {
-		dialog.ShowInformation("Batch complete", summaryText(s), u.win)
+		dialog.ShowInformation("Batch complete", text, u.win)
 		return
 	}
-	report := container.NewScroll(widget.NewLabel(summaryText(s)))
+	report := container.NewScroll(widget.NewLabel(text))
 	report.SetMinSize(fyne.NewSize(400, 200))
 	dialog.ShowCustom("Batch complete", "OK", report, u.win)
 }
