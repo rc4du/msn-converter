@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +34,7 @@ type appUI struct {
 	outDir    string
 	running   bool
 	xmlFilter storage.FileFilter
+	batchDone func(Summary) // test hook; called after finishBatch completes
 
 	list         *widget.List
 	outLabel     *widget.Label
@@ -90,7 +92,7 @@ func newAppUI(a fyne.App) *appUI {
 	})
 	u.outLabel = widget.NewLabel("No output folder selected")
 	u.progress = widget.NewProgressBar()
-	u.convertBtn = widget.NewButton("Convert", nil)
+	u.convertBtn = widget.NewButton("Convert", u.onConvertTapped)
 
 	top := container.NewHBox(u.addFilesBtn, u.addFolderBtn, u.clearBtn)
 	bottom := container.NewVBox(
@@ -192,4 +194,67 @@ func (u *appUI) onOutputPicked(dir fyne.ListableURI, err error) {
 		return
 	}
 	u.setOutputDir(dir.Path())
+}
+
+// onConvertTapped starts the batch: snapshot on the UI goroutine, work on a
+// background one (GUI-11).
+func (u *appUI) onConvertTapped() {
+	files, outDir := u.beginBatch()
+	go u.runBatchAsync(files, outDir)
+}
+
+// beginBatch snapshots the queue and output folder, marks the batch running
+// (disabling Convert) and resets the progress bar.
+func (u *appUI) beginBatch() (files []string, outDir string) {
+	files = u.queue.Items()
+	outDir = u.outDir
+	u.running = true
+	u.updateConvertState()
+	u.progress.SetValue(0)
+	return files, outDir
+}
+
+// runBatchAsync runs on a background goroutine; every UI mutation goes
+// through fyne.Do.
+func (u *appUI) runBatchAsync(files []string, outDir string) {
+	s := RunBatch(files, outDir, func(done, total int) {
+		fyne.Do(func() {
+			u.progress.SetValue(float64(done) / float64(total))
+		})
+	})
+	fyne.Do(func() { u.finishBatch(s) })
+}
+
+// finishBatch clears the running state, re-gates Convert and shows the
+// summary. The queue is left untouched (spec: list kept as-is).
+func (u *appUI) finishBatch(s Summary) {
+	u.running = false
+	u.updateConvertState()
+	u.showSummary(s)
+	if u.batchDone != nil {
+		u.batchDone(s)
+	}
+}
+
+// summaryText renders the batch outcome (GUI-13): "N converted, M failed"
+// plus one "file: reason" line per failure.
+func summaryText(s Summary) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d converted, %d failed", s.Converted, len(s.Failed))
+	for _, fe := range s.Failed {
+		fmt.Fprintf(&b, "\n%s: %s", filepath.Base(fe.Path), fe.Reason)
+	}
+	return b.String()
+}
+
+// showSummary pops the completion dialog: plain information when everything
+// converted, a scrollable failure report otherwise.
+func (u *appUI) showSummary(s Summary) {
+	if len(s.Failed) == 0 {
+		dialog.ShowInformation("Batch complete", summaryText(s), u.win)
+		return
+	}
+	report := container.NewScroll(widget.NewLabel(summaryText(s)))
+	report.SetMinSize(fyne.NewSize(400, 200))
+	dialog.ShowCustom("Batch complete", "OK", report, u.win)
 }

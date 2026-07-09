@@ -318,10 +318,10 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Headless: tapping Convert with real temp fixtures produces expected `.txt` files; progress reaches 1.0; Convert disabled during run, re-enabled after; queue unchanged after run
-- [ ] Summary content: `N converted, M failed` + per-file reasons (assert on generated summary string/objects)
-- [ ] Manual smoke on macOS: `go run .`, mixed batch, window responsive
-- [ ] Gate: `go build ./... && go vet ./... && go test ./...`
+- [x] Headless: tapping Convert with real temp fixtures produces expected `.txt` files; progress reaches 1.0; Convert disabled during run, re-enabled after; queue unchanged after run
+- [x] Summary content: `N converted, M failed` + per-file reasons (assert on generated summary string/objects)
+- [ ] Manual smoke on macOS: `go run .`, mixed batch, window responsive (deferred to user validation)
+- [x] Gate: `go build ./... && go vet ./... && go test ./...`
 
 **Tests**: unit (headless integration-style)
 **Gate**: build
