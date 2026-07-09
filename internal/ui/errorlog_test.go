@@ -195,6 +195,84 @@ func TestWriteErrorLogMissingFile(t *testing.T) {
 	}
 }
 
+// LOG-01 (gating) via handleErrorLog: a batch with ≥1 failure writes the log
+// and returns its full path.
+func TestHandleErrorLogWritesOnFailure(t *testing.T) {
+	inDir := t.TempDir()
+	outDir := t.TempDir()
+	failed := seedFailedFile(t, inDir, "bad.xml", []byte("<Log"))
+
+	s := Summary{Converted: 0, Failed: []FileError{{Path: failed, Reason: "boom"}}}
+	path, err := handleErrorLog(outDir, s)
+	if err != nil {
+		t.Fatalf("handleErrorLog: %v", err)
+	}
+	want := filepath.Join(outDir, "conversion-errors.log")
+	if path != want {
+		t.Errorf("path = %q; want %q", path, want)
+	}
+	if _, err := os.Stat(want); err != nil {
+		t.Errorf("log not written: %v", err)
+	}
+}
+
+// LOG-05: a batch with 0 failures writes no log.
+func TestHandleErrorLogNoFailuresWritesNothing(t *testing.T) {
+	outDir := t.TempDir()
+
+	path, err := handleErrorLog(outDir, Summary{Converted: 3})
+	if path != "" || err != nil {
+		t.Errorf("handleErrorLog = (%q, %v); want (\"\", nil)", path, err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "conversion-errors.log")); !os.IsNotExist(err) {
+		t.Errorf("log exists after all-success batch; stat err = %v", err)
+	}
+}
+
+// LOG-09: a fully successful batch deletes a leftover conversion-errors.log.
+func TestHandleErrorLogDeletesStaleOnSuccess(t *testing.T) {
+	outDir := t.TempDir()
+	stale := filepath.Join(outDir, "conversion-errors.log")
+	if err := os.WriteFile(stale, []byte("stale"), 0o644); err != nil {
+		t.Fatalf("seeding stale log: %v", err)
+	}
+
+	path, err := handleErrorLog(outDir, Summary{Converted: 2})
+	if path != "" || err != nil {
+		t.Errorf("handleErrorLog = (%q, %v); want (\"\", nil)", path, err)
+	}
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Errorf("stale log still present; stat err = %v", err)
+	}
+}
+
+// LOG-10: deletion target absent → proceed silently (no error surfaced).
+func TestHandleErrorLogMissingStaleIsSilent(t *testing.T) {
+	outDir := t.TempDir()
+
+	path, err := handleErrorLog(outDir, Summary{Converted: 1})
+	if path != "" || err != nil {
+		t.Errorf("handleErrorLog = (%q, %v); want (\"\", nil)", path, err)
+	}
+}
+
+// LOG-07 (data): an unwritable output folder surfaces the write error to the
+// caller instead of crashing.
+func TestHandleErrorLogWriteFailure(t *testing.T) {
+	inDir := t.TempDir()
+	notADir := seedFailedFile(t, inDir, "plainfile", []byte("x"))
+	outDir := filepath.Join(notADir, "sub") // child of a regular file: unwritable
+
+	s := Summary{Failed: []FileError{{Path: notADir, Reason: "boom"}}}
+	path, err := handleErrorLog(outDir, s)
+	if err == nil {
+		t.Fatalf("handleErrorLog succeeded writing under a regular file; path = %q", path)
+	}
+	if path != "" {
+		t.Errorf("path = %q on failure; want \"\"", path)
+	}
+}
+
 // Edge case: every file failed — all failures listed, counts read "0 converted,
 // M failed".
 func TestWriteErrorLogAllFailed(t *testing.T) {

@@ -46,6 +46,17 @@ func versionFromBuildInfo(bi *debug.BuildInfo, ok bool) string {
 	return "unknown"
 }
 
+// handleErrorLog is the post-batch entry point: with failures it writes the
+// log and returns its path; with none it removes any stale log (LOG-09/10,
+// errors deliberately ignored) so users never email an outdated file.
+func handleErrorLog(outDir string, s Summary) (string, error) {
+	if len(s.Failed) == 0 {
+		os.Remove(filepath.Join(outDir, errorLogName))
+		return "", nil
+	}
+	return writeErrorLog(outDir, s, time.Now(), appVersion())
+}
+
 // writeErrorLog writes the forensic log for a failed batch into outDir,
 // replacing any previous log. It returns the full path written.
 func writeErrorLog(outDir string, s Summary, now time.Time, version string) (string, error) {
