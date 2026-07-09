@@ -10,7 +10,7 @@ MSN-Converter is a simple Golang program that converts Microsoft MSN Messenger c
 - The user can chose a lot of XML files and bulk convert then.
 - The user can choose the folder where the converted files will be saved.
 
-The GUI is built with [Fyne](https://github.com/fyne-io/fyne). See `GUI_PLAN.md` for design decisions.
+The GUI is built with [Fyne](https://github.com/fyne-io/fyne).
 
 ## Project Structure
 

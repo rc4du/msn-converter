@@ -20,11 +20,11 @@
 
 ## Handoff
 
-- **Feature**: gui — `.specs/features/gui/` — **COMPLETE, Verifier PASS** (2026-07-08)
-- **Phase / Task**: all 12 tasks executed via 2 batch workers; Verifier report at `.specs/features/gui/validation.md` (16/16 ACs evidenced, 5/5 edge cases, sensor 5 injected / 5 killed, 52 tests green)
-- **Completed**: T1–T12, commits `32357e0..5813681` on main (one atomic commit per task)
+- **Feature**: error-log — `.specs/features/error-log/spec.md` — **spec APPROVED** (2026-07-09), Execute not started
+- **Phase / Task**: Specify complete (Medium scope: design inline, tasks implicit). 10 requirements LOG-01…LOG-10, all decisions user-confirmed in grilling session; closure gate passed.
+- **Completed**: none (no code yet)
 - **In-progress** (file:line): none
-- **Next step**: manual smoke on macOS — `go run .`: window "MSN Converter" ~600×450 opens; native pickers (.xml filter) feed queue; real drag-and-drop works; mixed batch shows summary dialog, window stays responsive. Then (deferred scope): Windows `.exe` packaging via fyne-cross/CI.
+- **Next step**: Execute per implement.md — start by listing atomic steps inline (expected ~5: `internal/ui/errorlog.go` writeErrorLog + forensics; wire into `runBatchAsync`/`finishBatch`/`showSummary` in `internal/ui/app.go`; stale-log delete on success; version via `runtime/debug.ReadBuildInfo`; tests for LOG-01…LOG-10). If listing reveals >5 steps → create formal tasks.md (safety valve). Tests derive from spec ACs; gate before done; one atomic commit per task; Verifier runs after last task.
 - **Blockers**: none
-- **Uncommitted files**: `.specs/` (all planning + validation docs), `AGENTS.md`, `GUI_PLAN.md` (untracked); `.gitignore` (modified); `README.md` (deleted) — pre-existing, intentionally not committed with feature tasks
+- **Uncommitted files**: `.specs/features/error-log/spec.md` (new), `.specs/STATE.md` (this update); `GUI_PLAN.md` deleted in working tree (pre-existing, unrelated)
 - **Branch**: main
