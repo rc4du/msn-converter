@@ -253,9 +253,9 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Headless tests: enablement matrix — empty+noDir / files+noDir / empty+dir → disabled; files+dir → enabled
-- [ ] Tap ✕ removes row; tap clear-all empties list; Convert re-disables when list empties
-- [ ] Gate: `go vet ./... && go test ./...`
+- [x] Headless tests: enablement matrix — empty+noDir / files+noDir / empty+dir → disabled; files+dir → enabled
+- [x] Tap ✕ removes row; tap clear-all empties list; Convert re-disables when list empties
+- [x] Gate: `go vet ./... && go test ./...`
 
 **Tests**: unit (headless, GUI-10 1:1)
 **Gate**: full
