@@ -230,10 +230,10 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] `go build ./...` green with old dirs deleted; no imports of `models/` remain
-- [ ] Headless test (fyne `test` pkg) asserts window title "MSN Converter"
-- [ ] macOS toolchain sanity: `go run .` opens a window (manual, dev machine)
-- [ ] Gate: `go build ./... && go vet ./... && go test ./...`
+- [x] `go build ./...` green with old dirs deleted; no imports of `models/` remain
+- [x] Headless test (fyne `test` pkg) asserts window title "MSN Converter"
+- [ ] macOS toolchain sanity: `go run .` opens a window (manual, dev machine — deferred to user validation)
+- [x] Gate: `go build ./... && go vet ./... && go test ./...`
 
 **Tests**: unit (headless title check; rest is shell)
 **Gate**: build
