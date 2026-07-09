@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -97,6 +99,13 @@ func newAppUI(a fyne.App) *appUI {
 		u.convertBtn,
 	)
 	u.win.SetContent(container.NewBorder(top, bottom, nil, nil, u.list))
+	u.win.SetOnDropped(func(_ fyne.Position, uris []fyne.URI) {
+		paths := make([]string, 0, len(uris))
+		for _, uri := range uris {
+			paths = append(paths, uri.Path())
+		}
+		u.addDropped(paths)
+	})
 
 	u.updateConvertState()
 	return u
@@ -130,6 +139,30 @@ func (u *appUI) setOutputDir(path string) {
 	u.outDir = path
 	u.outLabel.SetText(path)
 	u.updateConvertState()
+}
+
+// addDropped classifies dropped paths (GUI-15): folders contribute their
+// direct .xml files, .xml files (case-insensitive) are added, anything else
+// (including nonexistent paths) is ignored.
+func (u *appUI) addDropped(paths []string) {
+	var files []string
+	for _, p := range paths {
+		info, err := os.Stat(p)
+		if err != nil {
+			continue
+		}
+		switch {
+		case info.IsDir():
+			xmls, err := ListXML(p)
+			if err != nil {
+				continue
+			}
+			files = append(files, xmls...)
+		case strings.EqualFold(filepath.Ext(p), ".xml"):
+			files = append(files, p)
+		}
+	}
+	u.addFiles(files)
 }
 
 // onFilePicked handles the add-files dialog result. Cancel (nil URI) is a no-op.

@@ -196,6 +196,53 @@ func TestOnFolderPickedAddsXMLFiles(t *testing.T) {
 	}
 }
 
+// GUI-15: mixed drop — .xml files (case-insensitive) and folders' direct .xml
+// are appended (deduped); non-xml files and nonexistent paths are ignored.
+func TestAddDroppedMixed(t *testing.T) {
+	u := newTestUI(t)
+	dir := t.TempDir()
+
+	seed := func(rel string) string {
+		p := filepath.Join(dir, rel)
+		if err := os.WriteFile(p, []byte("x"), 0o644); err != nil {
+			t.Fatalf("seeding %s: %v", rel, err)
+		}
+		return p
+	}
+	xml := seed("a.xml")
+	upper := seed("B.XML")
+	txt := seed("c.txt")
+
+	sub := filepath.Join(dir, "sub")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatalf("mkdir sub: %v", err)
+	}
+	inSub := filepath.Join(sub, "d.xml")
+	if err := os.WriteFile(inSub, []byte("x"), 0o644); err != nil {
+		t.Fatalf("seeding sub/d.xml: %v", err)
+	}
+
+	u.addDropped([]string{
+		xml,
+		upper,
+		txt,                               // non-xml → ignored
+		sub,                               // folder → its direct .xml added
+		filepath.Join(dir, "missing.xml"), // nonexistent → ignored
+		xml,                               // duplicate → deduped
+	})
+
+	got := u.queue.Items()
+	want := []string{xml, upper, inSub}
+	if len(got) != len(want) {
+		t.Fatalf("queue = %v; want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("queue[%d] = %q; want %q", i, got[i], want[i])
+		}
+	}
+}
+
 func mustListable(t *testing.T, dir string) fyne.ListableURI {
 	t.Helper()
 	l, err := storage.ListerForURI(storage.NewFileURI(dir))

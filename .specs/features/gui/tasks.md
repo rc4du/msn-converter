@@ -297,8 +297,8 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Headless tests on `addDropped`: mixed drop (xml file, txt file, folder with xml, nonexistent path) → only xml + folder-xml added, deduped, no error
-- [ ] Gate: `go vet ./... && go test ./...`
+- [x] Headless tests on `addDropped`: mixed drop (xml file, txt file, folder with xml, nonexistent path) → only xml + folder-xml added, deduped, no error
+- [x] Gate: `go vet ./... && go test ./...`
 
 **Tests**: unit (headless, GUI-15 1:1)
 **Gate**: full
