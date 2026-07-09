@@ -41,6 +41,22 @@ Rules:
 - Runtime paths (input files, output folder) come from the GUI, not hardcoded dirs. No `files/` scaffolding.
 - Use `path/filepath` for all path building (Windows target).
 
+## Building
+
+Use the `Makefile`:
+
+| Command | Purpose |
+|---------|---------|
+| `make build` | Native binary for the host OS |
+| `make run` | Build + run locally |
+| `make test` | Run all tests |
+| `make tidy` | Sync `go.mod`/`go.sum` |
+| `make windows` | Cross-build Windows `.exe` via `fyne-cross` (needs Docker running) |
+| `make windows-mingw` | Cross-build Windows `.exe` on host via `mingw-w64` (needs `brew install mingw-w64` + `Icon.png` in root) |
+| `make clean` | Remove build artifacts |
+
+Fyne uses CGO (OpenGL/GLFW), so `GOOS=windows go build` alone does **not** work — a Windows C toolchain is required. `make windows` (Docker) is the reliable path; `make windows-mingw` avoids Docker but needs host mingw + an `Icon.png`.
+
 ## Instructions
 
 ### 1. Think Before Coding
