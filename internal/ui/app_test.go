@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 )
@@ -101,6 +104,105 @@ func TestClearAllEmptiesListAndDisablesConvert(t *testing.T) {
 	if !u.convertBtn.Disabled() {
 		t.Error("Convert enabled after clear-all emptied the list; want disabled")
 	}
+}
+
+// GUI-06/08: addFiles appends, de-dups, and refreshes gating.
+func TestAddFilesAppendsDedupsAndRefreshes(t *testing.T) {
+	u := newTestUI(t)
+	u.outDir = "/tmp/out"
+
+	u.addFiles([]string{"/tmp/a.xml", "/tmp/b.xml"})
+	u.addFiles([]string{"/tmp/a.xml"}) // duplicate — list unchanged
+
+	got := u.queue.Items()
+	want := []string{"/tmp/a.xml", "/tmp/b.xml"}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("queue = %v; want %v", got, want)
+	}
+	// Refresh happened: gating was recomputed after the mutation.
+	if u.convertBtn.Disabled() {
+		t.Error("Convert disabled after addFiles with outDir set; want enabled (refresh ran)")
+	}
+}
+
+// GUI-10: setOutputDir updates the path label and Convert gating.
+func TestSetOutputDirUpdatesLabelAndGating(t *testing.T) {
+	u := newTestUI(t)
+	u.queue.Add("/tmp/a.xml")
+	u.updateConvertState()
+	if !u.convertBtn.Disabled() {
+		t.Fatal("precondition failed: Convert should be disabled without outDir")
+	}
+
+	u.setOutputDir("/tmp/out")
+
+	if u.outDir != "/tmp/out" {
+		t.Errorf("outDir = %q; want %q", u.outDir, "/tmp/out")
+	}
+	if u.outLabel.Text != "/tmp/out" {
+		t.Errorf("output label = %q; want %q", u.outLabel.Text, "/tmp/out")
+	}
+	if u.convertBtn.Disabled() {
+		t.Error("Convert disabled after setOutputDir with non-empty queue; want enabled")
+	}
+}
+
+// GUI-06: the add-files dialog filter accepts only .xml.
+func TestXMLFilterAcceptsOnlyXML(t *testing.T) {
+	u := newTestUI(t)
+	if !u.xmlFilter.Matches(storage.NewFileURI("/tmp/a.xml")) {
+		t.Error("filter rejects /tmp/a.xml; want match")
+	}
+	if u.xmlFilter.Matches(storage.NewFileURI("/tmp/b.txt")) {
+		t.Error("filter matches /tmp/b.txt; want reject")
+	}
+}
+
+// Cancelled pickers (nil URI) are no-ops: queue, outDir and label unchanged.
+func TestPickerCancelIsNoOp(t *testing.T) {
+	u := newTestUI(t)
+	labelBefore := u.outLabel.Text
+
+	u.onFilePicked(nil, nil)
+	u.onFolderPicked(nil, nil)
+	u.onOutputPicked(nil, nil)
+
+	if u.queue.Len() != 0 {
+		t.Errorf("queue.Len() = %d after cancelled pickers; want 0", u.queue.Len())
+	}
+	if u.outDir != "" {
+		t.Errorf("outDir = %q after cancelled picker; want empty", u.outDir)
+	}
+	if u.outLabel.Text != labelBefore {
+		t.Errorf("output label = %q after cancelled picker; want %q", u.outLabel.Text, labelBefore)
+	}
+}
+
+// GUI-07: picking a folder appends every .xml directly inside it.
+func TestOnFolderPickedAddsXMLFiles(t *testing.T) {
+	u := newTestUI(t)
+	dir := t.TempDir()
+	for _, name := range []string{"a.xml", "c.txt"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("x"), 0o644); err != nil {
+			t.Fatalf("seeding %s: %v", name, err)
+		}
+	}
+
+	u.onFolderPicked(mustListable(t, dir), nil)
+
+	got := u.queue.Items()
+	if len(got) != 1 || filepath.Base(got[0]) != "a.xml" {
+		t.Errorf("queue = %v; want just a.xml from %s", got, dir)
+	}
+}
+
+func mustListable(t *testing.T, dir string) fyne.ListableURI {
+	t.Helper()
+	l, err := storage.ListerForURI(storage.NewFileURI(dir))
+	if err != nil {
+		t.Fatalf("lister for %s: %v", dir, err)
+	}
+	return l
 }
 
 // GUI-09: rows display the file's base name.

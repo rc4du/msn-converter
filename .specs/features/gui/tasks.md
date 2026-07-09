@@ -275,9 +275,9 @@ T8 → T9 → T10 → T11 → T12
 
 **Done when**:
 
-- [ ] Headless: `addFiles` appends+dedups and refreshes list; `setOutputDir` updates label + gating
-- [ ] File dialog has `.xml` filter set; cancel (nil URI) is a no-op (callback guard tested)
-- [ ] Gate: `go vet ./... && go test ./...`
+- [x] Headless: `addFiles` appends+dedups and refreshes list; `setOutputDir` updates label + gating
+- [x] File dialog has `.xml` filter set; cancel (nil URI) is a no-op (callback guard tested)
+- [x] Gate: `go vet ./... && go test ./...`
 
 **Tests**: unit (headless)
 **Gate**: full

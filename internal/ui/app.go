@@ -6,6 +6,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -24,10 +26,11 @@ func newMainWindow(a fyne.App) fyne.Window {
 // appUI holds the window state and widgets. Everything below it is Fyne-free;
 // this is the single wiring point.
 type appUI struct {
-	win     fyne.Window
-	queue   *Queue
-	outDir  string
-	running bool
+	win       fyne.Window
+	queue     *Queue
+	outDir    string
+	running   bool
+	xmlFilter storage.FileFilter
 
 	list         *widget.List
 	outLabel     *widget.Label
@@ -66,14 +69,23 @@ func newAppUI(a fyne.App) *appUI {
 		},
 	)
 
-	u.addFilesBtn = widget.NewButton("Add files", nil)
-	u.addFolderBtn = widget.NewButton("Add folder", nil)
+	u.xmlFilter = storage.NewExtensionFileFilter([]string{".xml"})
+	u.addFilesBtn = widget.NewButton("Add files", func() {
+		d := dialog.NewFileOpen(u.onFilePicked, u.win)
+		d.SetFilter(u.xmlFilter)
+		d.Show()
+	})
+	u.addFolderBtn = widget.NewButton("Add folder", func() {
+		dialog.NewFolderOpen(u.onFolderPicked, u.win).Show()
+	})
 	u.clearBtn = widget.NewButton("Clear all", func() {
 		u.queue.Clear()
 		u.refresh()
 	})
 
-	u.chooseOutBtn = widget.NewButton("Choose output folder…", nil)
+	u.chooseOutBtn = widget.NewButton("Choose output folder…", func() {
+		dialog.NewFolderOpen(u.onOutputPicked, u.win).Show()
+	})
 	u.outLabel = widget.NewLabel("No output folder selected")
 	u.progress = widget.NewProgressBar()
 	u.convertBtn = widget.NewButton("Convert", nil)
@@ -105,4 +117,46 @@ func (u *appUI) updateConvertState() {
 	} else {
 		u.convertBtn.Disable()
 	}
+}
+
+// addFiles appends paths to the queue (de-duplicated) and refreshes the UI.
+func (u *appUI) addFiles(paths []string) {
+	u.queue.Add(paths...)
+	u.refresh()
+}
+
+// setOutputDir records the chosen output folder, shows it, and re-gates Convert.
+func (u *appUI) setOutputDir(path string) {
+	u.outDir = path
+	u.outLabel.SetText(path)
+	u.updateConvertState()
+}
+
+// onFilePicked handles the add-files dialog result. Cancel (nil URI) is a no-op.
+func (u *appUI) onFilePicked(rc fyne.URIReadCloser, err error) {
+	if err != nil || rc == nil {
+		return
+	}
+	defer rc.Close()
+	u.addFiles([]string{rc.URI().Path()})
+}
+
+// onFolderPicked adds every .xml directly inside the picked folder. Cancel is a no-op.
+func (u *appUI) onFolderPicked(dir fyne.ListableURI, err error) {
+	if err != nil || dir == nil {
+		return
+	}
+	files, err := ListXML(dir.Path())
+	if err != nil {
+		return
+	}
+	u.addFiles(files)
+}
+
+// onOutputPicked records the picked output folder. Cancel is a no-op.
+func (u *appUI) onOutputPicked(dir fyne.ListableURI, err error) {
+	if err != nil || dir == nil {
+		return
+	}
+	u.setOutputDir(dir.Path())
 }
