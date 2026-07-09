@@ -20,11 +20,11 @@
 
 ## Handoff
 
-- **Feature**: error-log — `.specs/features/error-log/spec.md` — **spec APPROVED** (2026-07-09), Execute not started
-- **Phase / Task**: Specify complete (Medium scope: design inline, tasks implicit). 10 requirements LOG-01…LOG-10, all decisions user-confirmed in grilling session; closure gate passed.
-- **Completed**: none (no code yet)
+- **Feature**: error-log — **COMPLETE & VERIFIED** (2026-07-09). Verifier PASS: 10/10 ACs evidence-matched, 5/5 edge cases, sensor 3/3 mutants killed. Report: `.specs/features/error-log/validation.md`.
+- **Phase / Task**: Execute done — 3 atomic commits: `4917b2f` (errorlog core: writeErrorLog + forensics + version), `add3a0d` (handleErrorLog gating + stale cleanup), `fda3d04` (UI wiring + dialog discovery line). Gate: build + vet + 68 tests green.
+- **Completed**: LOG-01…LOG-10 (spec traceability marked Complete)
 - **In-progress** (file:line): none
-- **Next step**: Execute per implement.md — start by listing atomic steps inline (expected ~5: `internal/ui/errorlog.go` writeErrorLog + forensics; wire into `runBatchAsync`/`finishBatch`/`showSummary` in `internal/ui/app.go`; stale-log delete on success; version via `runtime/debug.ReadBuildInfo`; tests for LOG-01…LOG-10). If listing reveals >5 steps → create formal tasks.md (safety valve). Tests derive from spec ACs; gate before done; one atomic commit per task; Verifier runs after last task.
+- **Next step**: none for this feature. Candidate follow-up from spec Out-of-Scope: UTF-16 input decoding bug (log will prove it in the wild first).
 - **Blockers**: none
-- **Uncommitted files**: `.specs/features/error-log/spec.md` (new), `.specs/STATE.md` (this update); `GUI_PLAN.md` deleted in working tree (pre-existing, unrelated)
+- **Uncommitted files**: none after closing docs commit
 - **Branch**: main

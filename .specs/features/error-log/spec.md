@@ -109,18 +109,18 @@ Remaining implicit-requirement dimensions (auth, rate limits, concurrency beyond
 
 | Requirement ID | Story | AC | Phase | Status |
 | -------------- | ----- | -- | ----- | ------ |
-| LOG-01 | P1: Persistent error log | 1 | Execute | Pending |
-| LOG-02 | P1: Persistent error log | 2 | Execute | Pending |
-| LOG-03 | P1: Persistent error log | 3 | Execute | Pending |
-| LOG-04 | P1: Persistent error log | 4 | Execute | Pending |
-| LOG-05 | P1: Persistent error log | 5 | Execute | Pending |
-| LOG-06 | P1: User discovers the log | 1 | Execute | Pending |
-| LOG-07 | P1: User discovers the log | 2 | Execute | Pending |
-| LOG-08 | P1: User discovers the log | 3 | Execute | Pending |
-| LOG-09 | P2: Stale log cleanup | 1 | Execute | Pending |
-| LOG-10 | P2: Stale log cleanup | 2 | Execute | Pending |
+| LOG-01 | P1: Persistent error log | 1 | Execute | Complete |
+| LOG-02 | P1: Persistent error log | 2 | Execute | Complete |
+| LOG-03 | P1: Persistent error log | 3 | Execute | Complete |
+| LOG-04 | P1: Persistent error log | 4 | Execute | Complete |
+| LOG-05 | P1: Persistent error log | 5 | Execute | Complete |
+| LOG-06 | P1: User discovers the log | 1 | Execute | Complete |
+| LOG-07 | P1: User discovers the log | 2 | Execute | Complete |
+| LOG-08 | P1: User discovers the log | 3 | Execute | Complete |
+| LOG-09 | P2: Stale log cleanup | 1 | Execute | Complete |
+| LOG-10 | P2: Stale log cleanup | 2 | Execute | Complete |
 
-**Coverage:** 10 total, 0 mapped to tasks (tasks implicit — Medium scope), 0 unmapped.
+**Coverage:** 10 total, 10 covered by tests (tasks implicit — Medium scope), 0 unmapped.
 
 ---
 
